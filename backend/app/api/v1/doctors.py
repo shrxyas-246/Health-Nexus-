@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import desc, func, or_, select
 
-from app.api.deps import CurrentDoctor, CurrentUser, DbSession, doctor_can_access_patient
+from app.api.deps import CurrentDoctor, DbSession, doctor_can_access_patient
 from app.api.v1 import serializers as ser
 from app.core.enums import AppointmentStatus, ReviewTarget
 from app.models import (

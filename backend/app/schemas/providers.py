@@ -24,6 +24,8 @@ class DoctorOut(ORMModel):
     rating_avg: float
     rating_count: int
     is_verified: bool
+    procedures_performed: int = 0
+    complex_case_success_rate: float | None = None
     # Populated on recommendation responses only.
     distance_km: float | None = None
     match_score: float | None = None
@@ -59,6 +61,9 @@ class HospitalOut(ORMModel):
     has_ambulance: bool
     avg_consultation_fee: float
     about: str | None = None
+    accreditation: str | None = None
+    surgery_success_rate: float | None = None
+    complex_cases_handled: int = 0
     rating_avg: float
     rating_count: int
     is_verified: bool

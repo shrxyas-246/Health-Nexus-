@@ -28,12 +28,15 @@ from app.models import (
     PharmacyItem,
     Prescription,
     PrescriptionItem,
-    User,
 )
 from app.services import ml_client
 from app.services.geo import haversine_km
 
 HEURISTIC_VERSION = "heuristic-v1"
+
+# How severe a condition is drives whether the ranking optimises for outcomes
+# (specialist track record, surgical success) or for convenience and price.
+SEVERITY_WEIGHT = {"mild": 0, "moderate": 1, "severe": 2, "critical": 3}
 
 # Maps a condition to the specialities that treat it, for doctor matching.
 SPECIALITY_HINTS: dict[str, tuple[str, ...]] = {
@@ -127,8 +130,15 @@ def recommend_doctors(
     )
     if condition_id:
         query = select(Condition).where(Condition.id == condition_id)
-    condition_names = [c.name for c in db.scalars(query).all()]
+    conditions = db.scalars(query).all()
+    condition_names = [c.name for c in conditions]
     wanted = _specialities_for(condition_names)
+
+    # Severity decides whether outcome history outweighs convenience.
+    severity = max(
+        (SEVERITY_WEIGHT.get((c.severity or "").lower(), 0) for c in conditions), default=0
+    )
+    needs_specialist = severity >= 2
 
     doctors = db.scalars(select(DoctorProfile)).all()
     heuristic: dict[int, tuple[float, str]] = {}
@@ -162,11 +172,23 @@ def recommend_doctors(
         if doctor.years_experience >= 10:
             reasons.append(f"{doctor.years_experience} years experience")
 
+        # For severe or surgical cases, proven outcomes matter more than proximity.
+        if needs_specialist:
+            if doctor.complex_case_success_rate:
+                score += (doctor.complex_case_success_rate - 80) * 1.5
+                reasons.append(f"{doctor.complex_case_success_rate}% success in complex cases")
+            score += min(doctor.procedures_performed, 800) / 40
+            if doctor.specialization == "General Medicine" and wanted:
+                score -= 25  # a generalist is the wrong referral for a severe case
+            distance_weight = 0.4
+        else:
+            distance_weight = 1.0
+
         if distance is not None:
-            score += max(0, 20 - distance)
+            score += max(0, 20 - distance) * distance_weight
             reasons.append(f"{distance} km away")
         elif doctor.city and doctor.city == patient.city:
-            score += 10
+            score += 10 * distance_weight
             reasons.append(f"Practises in {doctor.city}")
 
         if doctor.is_verified:
@@ -181,6 +203,8 @@ def recommend_doctors(
                 "rating_count": doctor.rating_count,
                 "years_experience": doctor.years_experience,
                 "consultation_fee": doctor.consultation_fee,
+                "procedures_performed": doctor.procedures_performed,
+                "complex_case_success_rate": doctor.complex_case_success_rate,
                 "distance_km": distance,
                 "city": doctor.city,
                 "is_verified": doctor.is_verified,
@@ -430,6 +454,13 @@ def recommend_hospitals(
             reasons.append("24×7 emergency")
         if hospital.icu_bed_count:
             score += min(hospital.icu_bed_count, 40) * 0.3
+        if hospital.surgery_success_rate:
+            score += (hospital.surgery_success_rate - 85) * 1.6
+            reasons.append(f"{hospital.surgery_success_rate}% surgical success rate")
+        score += min(hospital.complex_cases_handled, 5000) / 250
+        if hospital.accreditation:
+            score += 6
+            reasons.append(f"{hospital.accreditation} accredited")
         if distance is not None:
             score += max(0, 25 - distance)
             reasons.append(f"{distance} km away")
@@ -443,6 +474,8 @@ def recommend_hospitals(
                 "specializations": hospital.specializations,
                 "bed_count": hospital.bed_count,
                 "icu_bed_count": hospital.icu_bed_count,
+                "surgery_success_rate": hospital.surgery_success_rate,
+                "complex_cases_handled": hospital.complex_cases_handled,
                 "avg_consultation_fee": hospital.avg_consultation_fee,
                 "distance_km": distance,
             }

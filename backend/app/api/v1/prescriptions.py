@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import desc, select
 
 from app.api.deps import (
@@ -11,7 +11,7 @@ from app.api.deps import (
     resolve_patient_access,
 )
 from app.api.v1 import serializers as ser
-from app.core.enums import PrescriptionStatus, ReminderKind, ReminderSource, Role, TimelineKind
+from app.core.enums import PrescriptionStatus, ReminderKind, ReminderSource, TimelineKind
 from app.models import (
     CareTeamLink,
     Prescription,

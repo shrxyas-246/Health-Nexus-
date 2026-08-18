@@ -35,6 +35,10 @@ class Hospital(ProviderMixin, Base):
     has_ambulance: Mapped[bool] = mapped_column(Boolean, default=True)
     avg_consultation_fee: Mapped[float] = mapped_column(Float, default=0)
     about: Mapped[str | None] = mapped_column(Text)
+    # Outcome signals the recommender weighs for severe or surgical cases.
+    surgery_success_rate: Mapped[float | None] = mapped_column(Float)
+    complex_cases_handled: Mapped[int] = mapped_column(Integer, default=0)
+    accreditation: Mapped[str | None] = mapped_column(String(120))  # NABH, JCI
 
 
 class Lab(ProviderMixin, Base):

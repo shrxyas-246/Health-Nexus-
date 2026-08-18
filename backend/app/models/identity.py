@@ -93,6 +93,10 @@ class DoctorProfile(Base):
     rating_avg: Mapped[float] = mapped_column(Float, default=0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Outcome signals the recommender weighs for severe or surgical cases.
+    procedures_performed: Mapped[int] = mapped_column(Integer, default=0)
+    complex_case_success_rate: Mapped[float | None] = mapped_column(Float)
+    treats_severity: Mapped[str | None] = mapped_column(String(40))  # mild,moderate,severe
 
     user: Mapped[User] = relationship(back_populates="doctor")
     hospital: Mapped["Hospital | None"] = relationship()  # noqa: F821

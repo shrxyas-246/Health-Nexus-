@@ -204,9 +204,11 @@ def _build_order(
     order.total_amount = round(order.subtotal - order.discount + order.delivery_fee, 2)
 
     if not persist:
-        # Quote only: return an unsaved shape the client can render.
+        # Quote only: nothing is saved, so stand in for the ids the client expects.
         order.id = 0
         order.created_at = datetime.now(UTC)
+        for index, line in enumerate(line_items, start=1):
+            line.id = index
         order.items = line_items
         return (
             ser.medicine_order_out(db, order),

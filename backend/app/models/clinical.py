@@ -141,6 +141,8 @@ class PrescriptionItem(Base):
     quantity: Mapped[int | None] = mapped_column(Integer)
     instructions: Mapped[str | None] = mapped_column(String(300))
 
+    prescription: Mapped[Prescription] = relationship(back_populates="items")
+
 
 class TestRequest(Base):
     """A test the doctor asked for; becomes a LabOrder once the patient books a lab."""

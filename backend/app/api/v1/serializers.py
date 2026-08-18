@@ -125,6 +125,8 @@ def doctor_out(
         rating_avg=doctor.rating_avg,
         rating_count=doctor.rating_count,
         is_verified=doctor.is_verified,
+        procedures_performed=doctor.procedures_performed,
+        complex_case_success_rate=doctor.complex_case_success_rate,
         distance_km=distance_km,
         match_score=match_score,
         match_reason=match_reason,

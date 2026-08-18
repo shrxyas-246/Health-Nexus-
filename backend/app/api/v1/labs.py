@@ -276,15 +276,25 @@ def upload_report(
     patient_id: int, payload: LabReportCreate, db: DbSession, user: CurrentUser
 ) -> LabReportOut:
     """Publish a report. Labs file results; patients backfill historical ones."""
-    patient = resolve_patient_access(db, user, patient_id)
-
     lab_id = payload.lab_id
-    if user.role == Role.LAB:
-        lab_id = _owned_lab(db, user).id
-
     order = db.get(LabOrder, payload.lab_order_id) if payload.lab_order_id else None
-    if order and order.patient_id != patient.id:
-        raise HTTPException(status_code=400, detail="That order belongs to a different patient")
+
+    if user.role == Role.LAB:
+        # A lab's access comes from the booking, not from a care relationship.
+        lab = _owned_lab(db, user)
+        lab_id = lab.id
+        if not order or order.lab_id != lab.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Reports must be filed against one of your own lab orders",
+            )
+        patient = db.get(PatientProfile, patient_id)
+        if not patient or order.patient_id != patient.id:
+            raise HTTPException(status_code=400, detail="That order belongs to a different patient")
+    else:
+        patient = resolve_patient_access(db, user, patient_id)
+        if order and order.patient_id != patient.id:
+            raise HTTPException(status_code=400, detail="That order belongs to a different patient")
 
     report = LabReport(
         patient_id=patient.id,

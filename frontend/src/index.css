@@ -359,3 +359,142 @@ footer{background:#141416;color:#9a9a9a;margin-top:0}
   *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
   .reveal,.event{opacity:1;transform:none}
 }
+
+/* ==========================================================================
+   Live-data UI — sign-in, loading states, and the sections added when the
+   frontend moved off hardcoded data.
+   ========================================================================== */
+
+/* --- sign in ------------------------------------------------------------- */
+.signin{min-height:100vh;display:grid;place-items:center;padding:24px;background:#faf7f5}
+.signin-card{width:100%;max-width:420px;padding:32px}
+.field{display:block;margin-top:14px}
+.field span{display:block;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px}
+.field input{width:100%;padding:11px 13px;border:1px solid #e6e2df;border-radius:10px;font:inherit;font-size:14px;background:#fff}
+.field input:focus{outline:none;border-color:#b3122a;box-shadow:0 0 0 3px rgba(179,18,42,.1)}
+.form-error{margin-top:14px;padding:10px 12px;border-radius:9px;background:#fdecef;color:#a01026;font-size:13px}
+.demo-accounts{margin-top:22px;padding-top:18px;border-top:1px solid #eee9e6}
+.demo-accounts>small{display:block;color:#98a2b3;font-size:12px;margin-bottom:8px}
+.demo-accounts code{background:#f3efec;padding:1px 5px;border-radius:4px;font-size:11px}
+.demo-row{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;
+  padding:9px 11px;margin-top:6px;border:1px solid #eee9e6;border-radius:9px;background:#fff;cursor:pointer}
+.demo-row:hover{border-color:#b3122a;background:#fffafb}
+.demo-row b{font-size:13px}
+.demo-row span{font-size:11.5px;color:#98a2b3}
+
+/* --- loading / empty / error --------------------------------------------- */
+.boot{min-height:100vh;display:grid;place-items:center;gap:12px;align-content:center}
+.boot .skeleton{width:180px}
+.state{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:26px;
+  border:1px dashed #e6e2df;border-radius:14px;background:#fff;margin:8px 0}
+.state b{font-size:14px}
+.state small{font-size:12.5px}
+.state.error{border-color:#f3c9d1;background:#fffafb}
+.state.gate{border-color:#e8d9a8;background:#fffdf5}
+.skeleton-stack{display:flex;flex-direction:column;gap:9px;width:100%;margin-bottom:10px}
+.skeleton{display:block;height:13px;border-radius:7px;width:100%;
+  background:linear-gradient(90deg,#f0ecea 25%,#f8f5f4 50%,#f0ecea 75%);background-size:200% 100%;
+  animation:shimmer 1.3s infinite}
+.skeleton-stack .skeleton:nth-child(2){width:82%}
+.skeleton-stack .skeleton:nth-child(3){width:64%}
+@keyframes shimmer{to{background-position:-200% 0}}
+
+/* --- history filters ------------------------------------------------------ */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+.filter{padding:7px 14px;border:1px solid #e6e2df;border-radius:999px;background:#fff;
+  font:inherit;font-size:12.5px;font-weight:600;color:#6b7280;cursor:pointer}
+.filter:hover{border-color:#b3122a;color:#b3122a}
+.filter.on{background:#b3122a;border-color:#b3122a;color:#fff}
+
+/* --- billing ledger ------------------------------------------------------- */
+.ledger{margin-top:22px;padding:6px 0 4px}
+.ledger-head{display:flex;justify-content:space-between;align-items:baseline;padding:16px 20px 12px;
+  border-bottom:1px solid #f1ecea}
+.ledger-row{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;
+  padding:13px 20px;border:0;border-bottom:1px solid #f6f2f0;background:none;text-align:left;
+  font:inherit;cursor:pointer}
+.ledger-row:last-child{border-bottom:0}
+.ledger-row:hover{background:#fdfbfa}
+.l-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.l-main b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-main span{font-size:11.5px}
+.l-amt{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.l-amt b{font-size:14px}
+
+/* --- insurance claims ----------------------------------------------------- */
+.claim-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;
+  padding:11px 0;border:0;border-bottom:1px solid #f3efec;background:none;text-align:left;
+  font:inherit;cursor:pointer}
+.claim-row:hover b{color:#b3122a}
+.claim-row>div{display:flex;flex-direction:column;gap:2px}
+.claim-row b{font-size:13.5px}
+.claim-row span{font-size:11.5px}
+
+/* --- prescription tests --------------------------------------------------- */
+.rx-tests{padding:14px 0 4px;border-top:1px solid #f1ecea;margin-top:6px}
+.rx-test{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13.5px}
+
+/* --- recommendation reasons ----------------------------------------------- */
+.match-why{margin:8px 0 12px;padding:8px 11px;border-radius:9px;font-size:11.5px;line-height:1.5;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+.match-why.light{background:#fff7f8;color:#8a5560;border:1px solid #f6e2e6}
+.doc-actions{display:flex;gap:8px}
+.doc-actions .btn{flex:1;justify-content:center}
+.warn-line{margin:8px 0;font-size:11.5px;color:#b3122a}
+
+/* --- today: reminders + chatbot ------------------------------------------- */
+.today-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.reminders,.bot{padding:20px}
+.reminders .head,.bot .head{display:flex;justify-content:space-between;align-items:center}
+.rem-list{display:flex;flex-direction:column;gap:2px;margin-top:10px;max-height:420px;overflow-y:auto}
+.rem{display:grid;grid-template-columns:26px 1fr 26px;align-items:center;gap:11px;padding:9px 0;
+  border-bottom:1px solid #f6f2f0}
+.rem:last-child{border-bottom:0}
+.rem.done .rem-body b{text-decoration:line-through;color:#98a2b3}
+.rem-ico{font-size:17px;text-align:center}
+.rem-body{display:flex;flex-direction:column;gap:1px;min-width:0}
+.rem-body b{font-size:13.5px}
+.rem-body span{font-size:11.5px;color:#98a2b3}
+.rem-check{width:24px;height:24px;border-radius:50%;border:1.6px solid #ddd6d2;background:#fff;
+  cursor:pointer;color:#fff;font-size:13px;line-height:1;display:grid;place-items:center}
+.rem-check:hover:not(:disabled){border-color:#b3122a}
+.rem-check.on{background:#1a7f4b;border-color:#1a7f4b}
+.bot-log{display:flex;flex-direction:column;gap:9px;margin:12px 0;min-height:180px;max-height:340px;
+  overflow-y:auto;padding-right:4px}
+.bubble{max-width:88%;padding:9px 13px;border-radius:14px;font-size:13px;line-height:1.55}
+.bubble.user{align-self:flex-end;background:#b3122a;color:#fff;border-bottom-right-radius:5px}
+.bubble.assistant{align-self:flex-start;background:#f5f1ef;color:#2c2724;border-bottom-left-radius:5px}
+.bubble.assistant.urgent{background:#fdecef;color:#8a0f21;font-weight:600}
+.bot-form{display:flex;gap:8px;padding-top:12px;border-top:1px solid #f1ecea}
+.bot-form input{flex:1;padding:10px 13px;border:1px solid #e6e2df;border-radius:10px;font:inherit;font-size:13.5px}
+.bot-form input:focus{outline:none;border-color:#b3122a}
+
+/* --- premium daily plan --------------------------------------------------- */
+.advice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:26px}
+.advice{padding:22px}
+.advice h3{font-size:16px;margin:10px 0 6px}
+.advice .muted{font-size:12.5px;line-height:1.6}
+.advice-targets{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.advice-targets span{display:flex;flex-direction:column;gap:1px;padding:7px 11px;border-radius:9px;
+  background:#faf7f5;font-size:10.5px;color:#98a2b3;text-transform:capitalize}
+.advice-targets b{font-size:14px;color:#2c2724}
+.advice-list{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:8px}
+.advice-list li{font-size:12.5px;line-height:1.55;padding-left:12px;border-left:2px solid #f0dde1}
+.advice-list b{text-transform:capitalize;margin-right:5px}
+
+/* --- misc ----------------------------------------------------------------- */
+.dot-badge{position:absolute;top:2px;right:2px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  background:#b3122a;color:#fff;font-size:9.5px;font-weight:700;font-style:normal;
+  display:grid;place-items:center}
+.ico-btn{position:relative}
+.sub.plus-on{background:#1a7f4b;color:#fff;cursor:default}
+.like{margin-left:10px;border:0;background:none;color:#b3122a;font:inherit;font-size:11.5px;cursor:pointer}
+.story{cursor:pointer}
+.tagline.warn i.d{background:#d98324}
+.tagline.warn{color:#8a5a1e}
+.tagline.bad i.d{background:#b3122a}
+.tagline.bad{color:#8a0f21}
+
+@media(max-width:960px){
+  .today-grid{grid-template-columns:1fr}
+}
