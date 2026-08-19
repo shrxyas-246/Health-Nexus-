@@ -25,9 +25,11 @@ class Settings(BaseSettings):
     # Platform commission taken on every payment routed through the app.
     COMMISSION_RATE: float = 0.05
 
-    # Base URL of the ML service owned by the model team. When unset, the
+    # Base URL of the ML service in ml/ — the five recommenders, the guidance
+    # assistant and the daily wellness plan. When unset (or unreachable), the
     # recommendation endpoints fall back to the deterministic ranking in
-    # services/recommendations.py so the product still works end to end.
+    # services/recommendations.py and the chatbot to the FAQ rules in
+    # api/v1/wellness.py, so the product still works end to end.
     ML_SERVICE_URL: str | None = None
 
     UPLOAD_DIR: str = "./uploads"

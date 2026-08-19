@@ -10,3 +10,8 @@ dist/
 .DS_Store
 
 .ruff_cache/
+
+# Trained model artefacts are rebuilt with `python -m healthnexus_ml.train`.
+# metrics.json is kept so the numbers in the README are traceable to a run.
+ml/artifacts/*.joblib
+ml/data/

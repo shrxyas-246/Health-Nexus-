@@ -117,13 +117,16 @@ export const api = {
   askChatbot: (question) => request('/wellness/chatbot/ask', { method: 'POST', body: { question } }),
   chatbotHistory: () => request('/wellness/chatbot/history'),
 
-  /* premium — served by the ML models once they land */
+  /* premium — ranked and written by the ML service (see ml/) */
   recommendedDoctors: (params) => request(`/recommendations/doctors${qs(params)}`),
   recommendedLabs: (params) => request(`/recommendations/labs${qs(params)}`),
   recommendedPharmacies: (params) => request(`/recommendations/pharmacies${qs(params)}`),
   recommendedHospitals: (params) => request(`/recommendations/hospitals${qs(params)}`),
   recommendedInsurance: (params) => request(`/recommendations/insurance${qs(params)}`),
   dailyAdvice: () => request('/recommendations/daily'),
+  refreshAdvice: () => request('/recommendations/daily/refresh', { method: 'POST' }),
+  dismissAdvice: (id) => request(`/recommendations/${id}/dismiss`, { method: 'POST' }),
+  mlStatus: () => request('/ml/status'),
 
   /* emergency */
   triggerEmergency: (payload) => request('/emergency', { method: 'POST', body: payload }),

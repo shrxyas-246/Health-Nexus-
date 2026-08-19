@@ -1,0 +1,21 @@
+# Training and serving the Health Nexus models.
+# Installs on top of the backend's requirements; the ML service can also run in
+# its own virtualenv, since it shares no code with the API.
+
+scikit-learn==1.9.0
+numpy>=2.0
+pandas>=2.2
+joblib>=1.4
+scipy>=1.13
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+
+# Tests
+pytest>=8.0
+httpx>=0.27
+
+# Optional: the LLM narration layer (healthnexus_ml/llm.py). The service runs
+# without it and serves the reviewed template copy instead.
+# anthropic>=0.40

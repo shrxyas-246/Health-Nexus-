@@ -6,7 +6,15 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import desc, select
 
 from app.api.deps import CurrentPatient, DbSession
-from app.models import ChatbotMessage, Reminder, ReminderLog
+from app.core.enums import ConditionStatus, PrescriptionStatus
+from app.models import (
+    ChatbotMessage,
+    Condition,
+    Prescription,
+    PrescriptionItem,
+    Reminder,
+    ReminderLog,
+)
 from app.schemas.common import Message
 from app.schemas.social import (
     ChatbotAsk,
@@ -17,6 +25,7 @@ from app.schemas.social import (
     ReminderTick,
     ReminderUpdate,
 )
+from app.services import ml_client
 
 router = APIRouter(prefix="/wellness", tags=["wellness"])
 
@@ -143,8 +152,9 @@ def complete_reminder(
 
 # --- chatbot -------------------------------------------------------------------
 
-# Rule-based answers for the most common general questions. The premium
-# LLM-backed assistant replaces `_answer` when the ML service lands.
+# Rule-based answers for the most common general questions. Model 1 (the trained
+# guidance assistant in the ML service) answers when it is reachable; these rules
+# are the fallback for when it is not, so the assistant never goes dark.
 FAQ_RULES: list[tuple[tuple[str, ...], str]] = [
     (
         ("water", "hydrat"),
@@ -215,13 +225,56 @@ def _answer(question: str) -> tuple[str, bool]:
     )
 
 
+def _chat_context(db, patient) -> dict:
+    """The slice of the record the assistant is allowed to personalise from.
+
+    Only what a general-guidance answer can legitimately use: current medicines,
+    active conditions and BMI. No reports, no notes, no free text — the model is
+    answering general questions, not reading the chart.
+    """
+    prescription = db.scalar(
+        select(Prescription)
+        .where(
+            Prescription.patient_id == patient.id,
+            Prescription.status == PrescriptionStatus.ACTIVE,
+        )
+        .order_by(desc(Prescription.issued_at))
+    )
+    medicines: list[str] = []
+    if prescription:
+        items = db.scalars(
+            select(PrescriptionItem).where(PrescriptionItem.prescription_id == prescription.id)
+        ).all()
+        medicines = [
+            " ".join(filter(None, [item.medicine_name, item.strength])) for item in items
+        ]
+
+    conditions = db.scalars(
+        select(Condition).where(
+            Condition.patient_id == patient.id, Condition.status != ConditionStatus.RESOLVED
+        )
+    ).all()
+
+    return {
+        "bmi": patient.bmi,
+        "medicines": medicines,
+        "conditions": [{"name": c.name, "category": c.category} for c in conditions],
+    }
+
+
 @router.post("/chatbot/ask", response_model=list[ChatbotMessageOut])
 def ask_chatbot(payload: ChatbotAsk, db: DbSession, patient: CurrentPatient) -> list[ChatbotMessage]:
     now = datetime.now(UTC)
     question = ChatbotMessage(
         patient_id=patient.id, role="user", body=payload.question, sent_at=now
     )
-    answer_text, escalate = _answer(payload.question)
+
+    reply = ml_client.get_chat_reply(payload.question, _chat_context(db, patient))
+    if reply:
+        answer_text, escalate = reply["answer"], reply["escalate"]
+    else:
+        answer_text, escalate = _answer(payload.question)
+
     answer = ChatbotMessage(
         patient_id=patient.id,
         role="assistant",

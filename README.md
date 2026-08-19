@@ -63,7 +63,9 @@ python seed.py && python smoke_test.py
 
 116 checks covering auth, access control, prescription versioning, lab and
 pharmacy orders, claims, commission splits, recommendations, reminders,
-the chatbot and the emergency flow.
+the chatbot and the emergency flow. A further 47 checks in
+`ml_integration_test.py` confirm the trained models — not the fallbacks — are
+driving each surface, and that the fallbacks hold when the ML service is down.
 
 ---
 
@@ -118,88 +120,105 @@ touch `used_amount` until it is actually settled.
 
 ## The ML integration
 
-Three models are planned. Each has a working non-ML implementation behind it, so
-every surface functions today and improves when a model is plugged in — no
-frontend changes needed.
+All three models are **built, trained, tested and wired in** — see
+[`ml/README.md`](ml/README.md) for the architecture, the metrics and how the
+training data was made.
 
-### Model 1 — health guidance chatbot
+```bash
+pip install -r ml/requirements.txt
+cd ml
+python -m healthnexus_ml.train                       # trains all seven artefacts
+python -m pytest tests -q                            # 44 tests
+uvicorn healthnexus_ml.service:app --port 8100
+```
 
-**Where it plugs in:** `app/api/v1/wellness.py` → the `_answer(question)` function.
+Then set one variable in `backend/.env` and restart the API:
 
-Currently rule-based over `FAQ_RULES`. It already implements the safety
-behaviour you specified: `ESCALATION_KEYWORDS` catches critical symptoms (chest
-pain, breathlessness, self-harm, stroke…) and returns a hard redirect to
-emergency care or a doctor, with `escalated_to_doctor` set on the stored
-message. Every non-urgent answer carries a not-a-diagnosis disclaimer.
+```
+ML_SERVICE_URL=http://127.0.0.1:8100
+```
 
-Replace `_answer` with a call to the agent. Keep the escalation check running
-*before* the model — a safety gate should not depend on model output. Transcript
-persistence (`chatbot_messages`) is already in place for context.
+That is the entire integration. Unset it and every surface falls back to the
+rules that shipped before the models existed — nothing breaks, the
+recommendations are just worse.
 
-### Model 2 — fine-tuned health-maintenance LLM (premium)
+```bash
+cd backend
+ML_SERVICE_URL=http://127.0.0.1:8100 python ml_integration_test.py   # 47 checks
+```
 
-**Where it plugs in:** the `ml_recommendations` table and
-`GET /api/v1/recommendations/daily`.
+### Model 1 — health guidance assistant
 
-The pipeline writes rows with `kind` in `diet` / `workout` / `lifestyle`, a
-`title`, a `rationale`, and a free-form JSON `payload`. The frontend already
-renders three payload shapes (nutrient targets + meals, workout sessions,
-single lifestyle change), so a model producing those keys needs no UI work.
+Two classifier heads (27 intents, 3 urgency levels) over word + character
+n-gram TF-IDF. Serves the chat on the Today tab via `POST /chat`.
 
-`services/recommendations.patient_features()` assembles the input the model
-needs — age, BMI, allergies, active conditions with severity — and the current
-prescription, doctor's diet advice and vitals history are all queryable off the
-same patient id.
+**100% intent accuracy and 100% emergency recall** on 31 hand-written phrasings
+that appear nowhere in the training corpus — the split that actually measures
+generalisation, rather than the random split (99.6%) which mostly measures
+memorisation.
+
+Safety is enforced in code, not left to the classifier: a deterministic red-flag
+phrase list runs *before* the model and overrides it, the urgency head escalates
+at p ≥ 0.35 rather than 0.5, low-confidence intents fall back to a safe
+capabilities message, and answer text is written and reviewed — the model only
+chooses which reviewed answer to give. The backend's FAQ fallback keeps its own
+escalation check, so an ML outage cannot switch escalation off.
+
+### Model 2 — daily wellness plan (premium)
+
+Five heads over one patient feature row: plan archetype (8 classes), workout
+intensity (3), calorie target, protein target, and seven independent binary
+dietary-restriction heads. Writes the three cards the Plus tab already rendered,
+cached as `ml_recommendations` rows for a day, with a "rebuild from my latest
+record" button.
+
+Archetype accuracy **0.958** (majority baseline 0.244), calorie MAE **103 kcal**
+(mean baseline 355), protein MAE **4.9 g**, restriction macro-F1 **0.884**. The
+models learn a documented clinical policy across *incomplete* records — around
+half the simulated patients are missing the lab value that would decide the
+plan, which is exactly why this is a model and not an `if` statement.
 
 ### Model 3 — recommender systems (premium)
 
-**Where it plugs in:** `app/services/ml_client.py` → `get_ranking()`.
+One gradient-boosted ranker per kind, trained pointwise on graded relevance and
+evaluated over held-out *queries*. Every one beats the hand-tuned ranking the API
+shipped with, measured on identical queries:
 
-Set `ML_SERVICE_URL` and every recommender forwards to it:
+| Recommender | NDCG@5 model | NDCG@5 heuristic | Lift |
+|---|---|---|---|
+| Doctor | 0.935 | 0.899 | +0.035 |
+| Hospital | 0.914 | 0.781 | +0.133 |
+| Lab | 0.851 | 0.809 | +0.042 |
+| Pharmacy | 0.840 | 0.751 | +0.089 |
+| Insurance | 0.947 | 0.808 | +0.140 |
 
-```
-POST {ML_SERVICE_URL}/rank
-{ "kind": "doctor" | "hospital" | "lab" | "pharmacy" | "insurance",
-  "patient": {...features...},
-  "candidates": [{"id": 1, ...features...}],
-  "context": {...} }
+The biggest gains are where the rules were weakest. For insurance the model's
+top features are the *interactions* `chronic × covers_pre_existing` and
+`chronic × waiting_period` — the old rule gave a flat bonus for pre-existing
+cover; the model learned it dominates for a chronic patient and barely matters
+for anyone else.
 
--> { "model_version": "v1",
-     "ranked": [{"id": 1, "score": 0.93, "reason": "..."}] }
-```
-
-If the service is unreachable the request does not fail — it falls back to the
-heuristics in `services/recommendations.py`, which produce the identical
-response shape. The candidate features passed to the model are exactly the
-signals you described:
-
-- **Doctor / hospital** — condition severity drives the weighting. At
-  `severity >= severe` the ranking shifts from convenience to outcomes:
-  `complex_case_success_rate`, `procedures_performed`, and for hospitals
-  `surgery_success_rate`, `complex_cases_handled` and accreditation. Below that
-  threshold, distance and rating dominate. A generalist is actively penalised
-  for a severe case.
-- **Lab** — the requested test basket is priced against each lab's own
-  catalogue; coverage, accreditation, home collection, distance and the real
-  quoted total all feed in, with an explicit bonus for the cheapest complete
-  basket.
-- **Pharmacy** — the patient's live prescription is priced item by item against
-  each store's stock. Stores missing items are marked; the cheapest store that
-  can fill the *whole* order is boosted.
-- **Insurance** — cover-per-premium ratio, pre-existing-condition cover weighted
-  by whether the patient actually has a chronic condition, insurer settlement
-  ratio and network size.
+Features are computed by the same code offline and online
+(`ml/healthnexus_ml/features.py`), so there is no training/serving skew, and each
+result carries a plain-English reason.
 
 ---
 
 ## Status
 
-**Working end to end:** authentication for all six roles, patient record and
+**Working end to end:** all three ML model families trained, tested and
+serving; authentication for all six roles, patient record and
 timeline, conditions, vitals, allergies, documents, prescription writing and
 versioning, appointment booking, lab booking and reporting, pharmacy orders,
 insurance claims through to settlement, payments with commission, reviews and
 ratings, patient–doctor and doctor–doctor chat, the article feed, reminders,
 the guidance chatbot, all five recommenders, and one-tap emergency dispatch.
+
+**Next for the models:** retrain on real usage once there is a click log —
+`train.py` is the only file that changes; swap the generated dataset for logged
+queries and keep the featuriser, metrics and baseline comparison as they are.
+The two weakest heads (purine and potassium restrictions, F1 0.67 and 0.79) are
+rare-class problems worth the next round of work.
 
 **Next:** dedicated frontends for the hospital, lab, pharmacy and insurer
 consoles (their APIs are done and tested); real file uploads (currently URL

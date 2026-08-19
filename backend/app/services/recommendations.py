@@ -276,6 +276,19 @@ def recommend_labs(
                 "rating_avg": lab.rating_avg,
                 "accreditation": lab.accreditation,
                 "home_collection": lab.home_collection,
+                "home_collection_fee": lab.home_collection_fee,
+                # Averaged over the matched basket, so the model sees how long
+                # this lab actually takes for the tests being ordered.
+                "turnaround_hours": (
+                    round(sum(t.turnaround_hours for t in matched) / len(matched), 1)
+                    if matched
+                    else None
+                ),
+                "discount_percent": (
+                    round(sum(t.discount_percent for t in matched) / len(matched), 1)
+                    if matched
+                    else None
+                ),
                 "distance_km": distance,
             }
         )
@@ -387,6 +400,9 @@ def recommend_pharmacies(
                 "coverage": coverage,
                 "rating_avg": pharmacy.rating_avg,
                 "delivers": pharmacy.delivers,
+                "delivery_fee": pharmacy.delivery_fee,
+                "avg_delivery_minutes": pharmacy.avg_delivery_minutes,
+                "is_24x7": pharmacy.is_24x7,
                 "distance_km": distance,
             }
         )
@@ -477,6 +493,8 @@ def recommend_hospitals(
                 "surgery_success_rate": hospital.surgery_success_rate,
                 "complex_cases_handled": hospital.complex_cases_handled,
                 "avg_consultation_fee": hospital.avg_consultation_fee,
+                "has_emergency": hospital.has_emergency,
+                "accreditation": hospital.accreditation,
                 "distance_km": distance,
             }
         )
@@ -546,8 +564,12 @@ def recommend_insurance(
                 "annual_premium": plan.annual_premium,
                 "covers_pre_existing": plan.covers_pre_existing,
                 "waiting_period_months": plan.waiting_period_months,
+                "covers_opd": plan.covers_opd,
+                "covers_daycare": plan.covers_daycare,
+                "room_rent_limit": plan.room_rent_limit,
                 "network_hospital_count": plan.network_hospital_count,
                 "claim_settlement_ratio": insurer.claim_settlement_ratio if insurer else 0,
+                "insurer_rating": insurer.rating_avg if insurer else 0,
             }
         )
         heuristic[plan.id] = (round(score, 2), " · ".join(reasons) or "Health cover")

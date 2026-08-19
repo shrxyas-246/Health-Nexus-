@@ -19,8 +19,9 @@ from app.schemas.providers import (
     PharmacyOut,
 )
 from app.schemas.social import RecommendationOut
+from app.services import ml_client
 from app.services import recommendations as rec
-from app.services.clock import as_aware
+from app.services import wellness_plan
 from app.services.geo import haversine_km
 from app.services.timeline import record_event
 
@@ -125,20 +126,45 @@ def recommended_insurance(
 
 @router.get("/recommendations/daily", response_model=list[RecommendationOut])
 def daily_advice(db: DbSession, patient: CurrentPatient) -> list[MLRecommendation]:
-    """Cached daily diet/workout/lifestyle advice written by the ML pipeline."""
+    """Today's diet/workout/lifestyle plan from model 2, generated once a day.
+
+    Regenerates when the cached plan is older than 24 hours. If the ML service is
+    unreachable the cached plan is served as-is — stale advice beats no advice,
+    and the patient is never shown an error for something a background job would
+    normally refresh.
+    """
     _require_premium(patient)
-    now = datetime.now(UTC)
-    rows = db.scalars(
-        select(MLRecommendation)
-        .where(
-            MLRecommendation.patient_id == patient.id,
-            MLRecommendation.dismissed.is_(False),
-            MLRecommendation.kind.in_(["diet", "workout", "lifestyle"]),
+    rows = wellness_plan.cached_plan(db, patient)
+    if wellness_plan.plan_is_stale(rows):
+        generated = wellness_plan.generate_plan(db, patient)
+        if generated:
+            return generated
+    return rows
+
+
+@router.post("/recommendations/daily/refresh", response_model=list[RecommendationOut])
+def refresh_daily_advice(db: DbSession, patient: CurrentPatient) -> list[MLRecommendation]:
+    """Force model 2 to rebuild the plan — used after the record changes."""
+    _require_premium(patient)
+    generated = wellness_plan.generate_plan(db, patient)
+    if not generated:
+        raise HTTPException(
+            status_code=503,
+            detail="The recommendation service is unavailable right now. Please try again shortly.",
         )
-        .order_by(desc(MLRecommendation.generated_at))
-        .limit(10)
-    ).all()
-    return [r for r in rows if r.expires_at is None or as_aware(r.expires_at) > now]
+    return generated
+
+
+@router.get("/ml/status", tags=["meta"])
+def ml_status(user: CurrentUser) -> dict:
+    """Which models are actually serving, so a fallback is visible rather than silent."""
+    health = ml_client.service_health()
+    return {
+        "configured": ml_client.is_ml_service_configured(),
+        "reachable": health is not None,
+        "service": health,
+        "fallback": "heuristic ranking + FAQ rules" if health is None else None,
+    }
 
 
 @router.post("/recommendations/{recommendation_id}/dismiss", response_model=Message)

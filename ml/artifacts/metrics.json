@@ -1,0 +1,241 @@
+{
+  "triage": {
+    "n_utterances": 3359,
+    "n_intents": 27,
+    "intent_accuracy": 0.9964,
+    "intent_macro_f1": 0.9952,
+    "intent_majority_baseline": 0.1048,
+    "urgency_accuracy": 1.0,
+    "urgency_emergency_recall": 1.0,
+    "held_out_intent_accuracy": 1.0,
+    "held_out_urgency_accuracy": 0.9355,
+    "held_out_emergency_recall": 1.0,
+    "held_out_cases": 31,
+    "trained_at": "2026-08-19T06:39:40+00:00",
+    "missed_escalations": []
+  },
+  "generated_at": "2026-08-19T06:42:33+00:00",
+  "wellness": {
+    "n_records": 12000,
+    "archetype_accuracy": 0.9583,
+    "archetype_macro_f1": 0.949,
+    "archetype_majority_baseline": 0.2437,
+    "intensity_accuracy": 0.9583,
+    "calorie_mae": 103.4,
+    "calorie_mae_mean_baseline": 354.8,
+    "calorie_r2": 0.9056,
+    "protein_mae": 4.92,
+    "protein_r2": 0.8789,
+    "restrictions": {
+      "sodium_limit": {
+        "f1": 0.9682,
+        "accuracy": 0.9693,
+        "positive_rate": 0.4833
+      },
+      "sugar_limit": {
+        "f1": 0.9685,
+        "accuracy": 0.9677,
+        "positive_rate": 0.5133
+      },
+      "saturated_fat_limit": {
+        "f1": 0.9406,
+        "accuracy": 0.9653,
+        "positive_rate": 0.3
+      },
+      "potassium_limit": {
+        "f1": 0.7877,
+        "accuracy": 0.9677,
+        "positive_rate": 0.091
+      },
+      "purine_limit": {
+        "f1": 0.6689,
+        "accuracy": 0.9667,
+        "positive_rate": 0.0663
+      },
+      "caffeine_limit": {
+        "f1": 0.9482,
+        "accuracy": 0.9667,
+        "positive_rate": 0.3277
+      },
+      "alcohol_avoid": {
+        "f1": 0.9065,
+        "accuracy": 0.969,
+        "positive_rate": 0.1757
+      }
+    },
+    "restriction_macro_f1": 0.8841,
+    "trained_at": "2026-08-19T06:39:46+00:00"
+  },
+  "rankers": {
+    "doctor": {
+      "model": {
+        "ndcg@3": 0.9295,
+        "ndcg@5": 0.9345,
+        "hit@1": 0.321,
+        "hit@3": 0.763,
+        "mrr": 0.5614,
+        "spearman_vs_true_utility": 0.8087
+      },
+      "heuristic_baseline": {
+        "ndcg@3": 0.8902,
+        "ndcg@5": 0.8992,
+        "hit@1": 0.302,
+        "hit@3": 0.707,
+        "mrr": 0.5314,
+        "spearman_vs_true_utility": 0.8227
+      },
+      "lift_ndcg@5": 0.0353,
+      "lift_hit@1": 0.019,
+      "n_train_queries": 4000,
+      "n_test_queries": 1000,
+      "n_train_rows": 59985,
+      "n_features": 32,
+      "top_features": {
+        "f_speciality_match": 0.97743,
+        "p_n_conditions": 0.05759,
+        "c_rating_avg__rank": 0.05651,
+        "c_is_verified": 0.04968,
+        "f_is_general": 0.04964,
+        "x_severity_x_success": 0.03413,
+        "c_distance_km__rank": 0.02649,
+        "c_years_experience": 0.02329
+      }
+    },
+    "hospital": {
+      "model": {
+        "ndcg@3": 0.9076,
+        "ndcg@5": 0.9138,
+        "hit@1": 0.284,
+        "hit@3": 0.69,
+        "mrr": 0.5175,
+        "spearman_vs_true_utility": 0.8265
+      },
+      "heuristic_baseline": {
+        "ndcg@3": 0.7697,
+        "ndcg@5": 0.7809,
+        "hit@1": 0.236,
+        "hit@3": 0.538,
+        "mrr": 0.442,
+        "spearman_vs_true_utility": 0.5708
+      },
+      "lift_ndcg@5": 0.1329,
+      "lift_hit@1": 0.048,
+      "n_train_queries": 4000,
+      "n_test_queries": 1000,
+      "n_train_rows": 59875,
+      "n_features": 31,
+      "top_features": {
+        "f_condition_speciality_match": 0.39169,
+        "f_need_match": 0.28604,
+        "c_rating_avg__rank": 0.08472,
+        "c_is_accredited": 0.08004,
+        "c_has_emergency": 0.04775,
+        "x_severity_x_success": 0.02782,
+        "p_n_conditions": 0.02718,
+        "c_rating_avg": 0.02351
+      }
+    },
+    "lab": {
+      "model": {
+        "ndcg@3": 0.8374,
+        "ndcg@5": 0.851,
+        "hit@1": 0.268,
+        "hit@3": 0.631,
+        "mrr": 0.4899,
+        "spearman_vs_true_utility": 0.7554
+      },
+      "heuristic_baseline": {
+        "ndcg@3": 0.7955,
+        "ndcg@5": 0.8086,
+        "hit@1": 0.261,
+        "hit@3": 0.587,
+        "mrr": 0.4731,
+        "spearman_vs_true_utility": 0.6991
+      },
+      "lift_ndcg@5": 0.0424,
+      "lift_hit@1": 0.007,
+      "n_train_queries": 4000,
+      "n_test_queries": 1000,
+      "n_train_rows": 59574,
+      "n_features": 28,
+      "top_features": {
+        "c_coverage": 0.60222,
+        "c_is_accredited": 0.11503,
+        "c_home_collection": 0.09379,
+        "c_rating_avg__rank": 0.0899,
+        "c_quoted_total__rel": 0.08975,
+        "c_quoted_total__rank": 0.07544,
+        "c_rating_avg": 0.03196,
+        "c_turnaround_hours__rank": 0.01824
+      }
+    },
+    "pharmacy": {
+      "model": {
+        "ndcg@3": 0.8296,
+        "ndcg@5": 0.8399,
+        "hit@1": 0.259,
+        "hit@3": 0.618,
+        "mrr": 0.4803,
+        "spearman_vs_true_utility": 0.7355
+      },
+      "heuristic_baseline": {
+        "ndcg@3": 0.736,
+        "ndcg@5": 0.7508,
+        "hit@1": 0.211,
+        "hit@3": 0.524,
+        "mrr": 0.4189,
+        "spearman_vs_true_utility": 0.5654
+      },
+      "lift_ndcg@5": 0.0891,
+      "lift_hit@1": 0.048,
+      "n_train_queries": 4000,
+      "n_test_queries": 1000,
+      "n_train_rows": 60118,
+      "n_features": 27,
+      "top_features": {
+        "c_coverage": 0.59994,
+        "c_quoted_total__rel": 0.12087,
+        "c_rating_avg__rank": 0.06758,
+        "c_quoted_total__rank": 0.0612,
+        "c_delivery_minutes": 0.04877,
+        "c_delivers": 0.04695,
+        "c_rating_avg__rel": 0.02023,
+        "c_rating_avg": 0.01973
+      }
+    },
+    "insurance": {
+      "model": {
+        "ndcg@3": 0.9457,
+        "ndcg@5": 0.9472,
+        "hit@1": 0.295,
+        "hit@3": 0.724,
+        "mrr": 0.5392,
+        "spearman_vs_true_utility": 0.9298
+      },
+      "heuristic_baseline": {
+        "ndcg@3": 0.7822,
+        "ndcg@5": 0.8075,
+        "hit@1": 0.215,
+        "hit@3": 0.558,
+        "mrr": 0.4352,
+        "spearman_vs_true_utility": 0.7672
+      },
+      "lift_ndcg@5": 0.1397,
+      "lift_hit@1": 0.08,
+      "n_train_queries": 4000,
+      "n_test_queries": 1000,
+      "n_train_rows": 59910,
+      "n_features": 28,
+      "top_features": {
+        "x_chronic_x_pre_existing": 0.82685,
+        "x_chronic_x_waiting": 0.1315,
+        "c_cover_per_premium__rank": 0.09986,
+        "c_cover_per_premium__rel": 0.07674,
+        "c_claim_settlement_ratio__rank": 0.05023,
+        "c_insurer_rating": 0.04066,
+        "c_claim_settlement_ratio": 0.02584,
+        "c_covers_opd": 0.02459
+      }
+    }
+  }
+}
